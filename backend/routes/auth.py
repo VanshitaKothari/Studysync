@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
 from pymongo import MongoClient
-import bcrypt
+from bcrypt import hashpw, gensalt, checkpw
 import os
 from dotenv import load_dotenv
 from models.user import create_user
@@ -27,7 +27,7 @@ def register():
     if users.find_one({"email": email}):
         return jsonify({"error": "Email already exists"}), 400
 
-    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    hashed = hashpw(password.encode("utf-8"), gensalt())
     user = create_user(username, email, hashed)
     users.insert_one(user)
 
@@ -43,7 +43,7 @@ def login():
     if not user:
         return jsonify({"error": "Invalid credentials"}), 401
 
-    if not bcrypt.checkpw(password.encode("utf-8"), user["password"]):
+    if not checkpw(password.encode("utf-8"), user["password"]):
         return jsonify({"error": "Invalid credentials"}), 401
 
     token = create_access_token(identity=str(user["_id"]))
