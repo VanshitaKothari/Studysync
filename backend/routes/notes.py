@@ -1,22 +1,18 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from pymongo import MongoClient
 from bson import ObjectId
-import os
 from dotenv import load_dotenv
 from models.note import create_note
+import uuid
 
 load_dotenv()
 
 notes_bp = Blueprint("notes", __name__)
 
-client = MongoClient(os.getenv("MONGO_URI"))
-db = client["studysync"]
-notes = db["notes"]
-
 @notes_bp.route("/", methods=["POST"])
 @jwt_required()
 def create():
+    notes = current_app.db["notes"]
     user_id = get_jwt_identity()
     data = request.get_json()
     title = data.get("title", "Untitled")
@@ -38,6 +34,7 @@ def create():
 @notes_bp.route("/", methods=["GET"])
 @jwt_required()
 def get_notes():
+    notes = current_app.db["notes"]
     user_id = get_jwt_identity()
     user_notes = list(notes.find({"user_id": user_id}).sort("created_at", -1))
 
@@ -50,14 +47,15 @@ def get_notes():
 @notes_bp.route("/<note_id>", methods=["DELETE"])
 @jwt_required()
 def delete_note(note_id):
+    notes = current_app.db["notes"]
     user_id = get_jwt_identity()
     notes.delete_one({"_id": ObjectId(note_id), "user_id": user_id})
     return jsonify({"message": "Note deleted"}), 200
-import uuid
 
 @notes_bp.route("/share/<note_id>", methods=["POST"])
 @jwt_required()
 def share_note(note_id):
+    notes = current_app.db["notes"]
     user_id = get_jwt_identity()
     share_token = str(uuid.uuid4())
     notes.update_one(
@@ -68,6 +66,7 @@ def share_note(note_id):
 
 @notes_bp.route("/view/<share_token>", methods=["GET"])
 def view_shared_note(share_token):
+    notes = current_app.db["notes"]
     note = notes.find_one({"share_token": share_token})
     if not note:
         return jsonify({"error": "Note not found"}), 404

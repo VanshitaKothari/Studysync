@@ -1,8 +1,6 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token
-from pymongo import MongoClient
 from bcrypt import hashpw, gensalt, checkpw
-import os
 from dotenv import load_dotenv
 from models.user import create_user
 
@@ -10,12 +8,9 @@ load_dotenv()
 
 auth_bp = Blueprint("auth", __name__)
 
-client = MongoClient(os.getenv("MONGO_URI"))
-db = client["studysync"]
-users = db["users"]
-
 @auth_bp.route("/register", methods=["POST"])
 def register():
+    users = current_app.db["users"]
     data = request.get_json()
     username = data.get("username")
     email = data.get("email")
@@ -35,6 +30,7 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
+    users = current_app.db["users"]
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
