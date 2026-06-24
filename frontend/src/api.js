@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://studysync-backend-si0l.onrender.com',
-});
+  baseURL: 'https://studysync-backend-si0l.onrender.com/api',
 });
 
 API.interceptors.request.use((req) => {
